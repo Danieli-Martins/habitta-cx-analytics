@@ -105,7 +105,7 @@ O dashboard está estruturado em uma hierarquia de 5 abas projetadas para revis�
 * **Aderência por Agente:**  
   ![Aderência Agente](imagens/aderencia_agente.PNG)
 * **Aderência Total:**  
-  ![Aderência Total](images/aderencia_total.PNG)   
+  ![Aderência Total](imagens/aderencia_total.PNG)   
 
 ### Funcionalidades de Interatividade
 * **Cross-Highlighting (Filtro Cruzado):** Selecionar uma categoria específica (ex: "Nota Fiscal") recalcula dinamicamente os cartões de volume e isola os gráficos de contribuição dos agentes.
