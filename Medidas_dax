@@ -1,0 +1,180 @@
+-- =====================================================================
+-- MEDIDAS DAX - PROJETO HABITTA CX ANALYTICS
+-- =====================================================================
+
+-- 1. % Falha Técnica
+% Falha Técnica = DIVIDE([Tempo Falha Técnica], [Tempo Total Jornada], 0)
+
+-- 2. % Particular
+% Particular = DIVIDE([Tempo Particular], [Tempo Total Jornada], 0)
+
+-- 3. % Reunião
+% Reunião = DIVIDE([Tempo Reunião], [Tempo Total Jornada], 0)
+
+-- 4. Aderência Agente Card
+Aderência Agente Card = 
+IF(
+    ISFILTERED('public dim_agentes'[Nome agente]),
+    [Taxa de Aderência],
+    BLANK()
+)
+
+-- 5. Aderência Chat
+Aderência Chat = 
+CALCULATE(
+    [Taxa de Aderência],
+    'public dim_agentes'[Canal] = "Chat"
+)
+
+-- 6. Aderência Email
+Aderência Email = 
+CALCULATE(
+    [Taxa de Aderência],
+    'public dim_agentes'[Canal] = "Email"
+)
+
+-- 7. Aderência Geral Time
+Aderência Geral Time = 
+CALCULATE(
+    [Taxa de Aderência],
+    REMOVEFILTERS('public dim_agentes')
+)
+
+-- 8. Aderência Whatsapp
+Aderência Whatsapp = 
+CALCULATE(
+    [Taxa de Aderência],
+    'public dim_agentes'[Canal] = "Whatsapp"
+)
+
+-- 9. Atendimentos Finalizados
+Atendimentos Finalizados = 
+DISTINCTCOUNT('public fato_atendimentos'[id_atendimento])
+
+-- 10. CSAT Agente
+CSAT Agente = 
+IF(
+    ISFILTERED('public dim_agentes'[Nome agente]),
+    AVERAGE('public fato_atendimentos'[csat]),
+    BLANK()
+)
+
+-- 11. Dias com Atraso
+Dias com Atraso = 
+COALESCE(
+    CALCULATE(
+        COUNTROWS('public fato_jornada'),
+        FILTER(
+            'public fato_jornada',
+            VAR HorarioPrevistoEntrada = RELATED('public dim_agentes'[horario_entrada])
+            VAR HorarioComTolerancia = HorarioPrevistoEntrada + TIME(0, 5, 0)
+            
+            -- 1. Atraso na entrada (com tolerância de 5 minutos)
+            VAR AtrasoEntrada = 'public fato_jornada'[hora_entrada] > HorarioComTolerancia
+                && NOT(ISBLANK('public fato_jornada'[hora_entrada]))
+                && NOT(ISBLANK(HorarioPrevistoEntrada))
+                
+            -- 2. Pausas particulares e falhas técnicas (qualquer valor > 0)
+            VAR ParticularProibido = 'public fato_jornada'[particular] > TIME(0, 0, 0)
+            VAR FalhaTecnicaProibida = 'public fato_jornada'[falha_tecnica] > TIME(0, 0, 0)
+            
+            -- 3. Reunião apenas gera infração se ultrapassar 15 minutos
+            VAR ReuniaoEstourada = 'public fato_jornada'[reuniao] > TIME(0, 15, 0)
+            
+            -- 4. Pausa 10 ultrapassando o limite total de 20 minutos (duas pausas de 10 min)
+            VAR Pausa10Estourada = 'public fato_jornada'[pausa_10] > TIME(0, 20, 0)
+            
+            -- 5. Pausa 20 ultrapassando o limite de 20 minutos
+            VAR Pausa20Estourada = 'public fato_jornada'[pausa_20] > TIME(0, 20, 0)
+            
+            RETURN
+                AtrasoEntrada || ParticularProibido || FalhaTecnicaProibida || ReuniaoEstourada || Pausa10Estourada || Pausa20Estourada
+        )
+    ),
+    0
+)
+
+-- 12. CSAT Equipe
+CSAT Equipe = 
+CALCULATE(
+    AVERAGE('public fato_atendimentos'[csat])
+)
+
+-- 13. Media Atendidos Equipe
+Media Atendidos Equipe = 
+AVERAGEX(
+    VALUES('public dim_calendario'[data_ref]),
+    [Atendimentos Finalizados]
+)
+
+-- 14. Media Atendidos Individual
+Media Atendidos Individual = 
+AVERAGEX(
+    VALUES('public dim_calendario'[data_ref]),
+    [Atendimentos Finalizados]
+)
+
+-- 15. Rotulo_Agentes
+Rotulo_Agentes = 
+VAR QuantidadeAtual = COUNT('public fato_atendimentos'[id_atendimento])
+VAR TotalGeral = CALCULATE(COUNT('public fato_atendimentos'[id_atendimento]), ALL('public dim_agentes'))
+VAR Percentual = DIVIDE(QuantidadeAtual, TotalGeral)
+RETURN
+QuantidadeAtual & " (" & FORMAT(Percentual, "0.0%") & ")"
+
+-- 16. Rotulo_Motivos
+Rotulo_Motivos = 
+VAR QuantidadeAtual = COUNT('public fato_atendimentos'[id_atendimento])
+VAR TotalGeral = CALCULATE(COUNT('public fato_atendimentos'[id_atendimento]), ALL('public dim_motivos'))
+VAR Percentual = DIVIDE(QuantidadeAtual, TotalGeral)
+RETURN
+QuantidadeAtual & " (" & FORMAT(Percentual, "0.0%") & ")"
+
+-- 17. Taxa de Aderência
+Taxa de Aderência = 
+CALCULATE(
+    VAR TotalJornadas = COUNTROWS('public fato_jornada')
+    VAR QtdAtrasos = [Dias com Atraso]
+    RETURN
+        IF(
+            TotalJornadas = 0,
+            BLANK(),
+            DIVIDE(TotalJornadas - QtdAtrasos, TotalJornadas)
+        )
+)
+
+-- 18. Tempo Falha Técnica
+Tempo Falha Técnica = SUM('public fato_jornada'[falha_tecnica]) * 24
+
+-- 19. Tempo Particular
+Tempo Particular = SUM('public fato_jornada'[particular]) * 24
+
+-- 20. Tempo Reunião
+Tempo Reunião = SUM('public fato_jornada'[reuniao]) * 24
+
+-- 21. Tempo Total Jornada
+Tempo Total Jornada = SUMX('public fato_jornada', 'public fato_jornada'[hora_saida] - 'public fato_jornada'[hora_entrada]) * 24
+
+-- 22. TMA (Tempo Médio de Atendimento)
+TMA = 
+VAR MediaDias = AVERAGE('public fato_atendimentos'[tempo_atendimento])
+VAR TotalSegundos = INT(MediaDias * 86400)
+VAR Horas = INT(TotalSegundos / 3600)
+VAR Minutos = INT(MOD(TotalSegundos, 3600) / 60)
+VAR Segundos = MOD(TotalSegundos, 60)
+RETURN
+FORMAT(Horas, "00") & ":" & FORMAT(Minutos, "00") & ":" & FORMAT(Segundos, "00")
+
+-- 23. TME (Tempo Médio de Espera)
+TME = 
+VAR MediaDias = AVERAGE('public fato_atendimentos'[tempo_espera])
+VAR TotalSegundos = INT(MediaDias * 86400)
+VAR Horas = INT(TotalSegundos / 3600)
+VAR Minutos = INT(MOD(TotalSegundos, 3600) / 60)
+VAR Segundos = MOD(TotalSegundos, 60)
+RETURN
+FORMAT(Horas, "00") & ":" & FORMAT(Minutos, "00") & ":" & FORMAT(Segundos, "00")
+
+-- 24. Total Entrantes
+Total Entrantes = 
+COUNTROWS('public fato_atendimentos')
