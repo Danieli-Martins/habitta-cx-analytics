@@ -82,10 +82,30 @@ A aderência é computada com base em rigorosos parâmetros de conformidade corp
 O dashboard está estruturado em uma hierarquia de 5 abas projetadas para revisão executiva e monitoramento operacional, governadas por um filtro global de calendário sincronizado.
 
 1. **Visão Geral (Canais Consolidados):** Resumo macro do volume total, TMA global, TME e CSAT em todos os canais de suporte.
+* **Panorama Geral (Motivos):**  
+  ![Geral Motivo](imagens/geral_motivo.PNG)
+* **Panorama Geral (Agentes):**  
+  ![Geral Agente](imagens/geral_agente.png)
 2. **Análise do Canal Chat:** Visão operacional filtrada dedicada exclusivamente ao desempenho do chat no aplicativo.
+* **Por Motivo:**  
+  ![Chat Motivo](imagens/chat_motivo.PNG)
+* **Por Agente:**  
+  ![Chat Agente](imagens/chat_agente.PNG)
 3. **Análise do Canal E-mail:** Visão focada em solicitações de back-office, reclamações e tempos de resolução de chamados complexos.
+* **Por Motivo:**  
+  ![E-mail Motivo](imagens/email_motivo.PNG)
+* **Por Agente:**  
+  ![E-mail Agente](imagens/email_agente.PNG)
 4. **Análise do Canal WhatsApp:** Rastreamento operacional de alto volume para métricas de resposta rápida.
+* **Por Motivo:**  
+  ![WhatsApp Motivo](imagens/whatsapp_motivo.PNG)
+* **Por Agente:**  
+  ![WhatsApp Agente](imagens/whatsapp_agente.png)
 5. **Aderência da Força de Trabalho:** Painel de governança exibindo taxas de aderência individuais e de equipe, fatores de desvio (falhas técnicas, reuniões, pausas particulares) e percentuais de aderência por canal.
+* **Aderência por Agente:**  
+  ![Aderência Agente](imagens/aderencia_agente.PNG)
+* **Aderência Total:**  
+  ![Aderência Total](images/aderencia_total.PNG)   
 
 ### Funcionalidades de Interatividade
 * **Cross-Highlighting (Filtro Cruzado):** Selecionar uma categoria específica (ex: "Nota Fiscal") recalcula dinamicamente os cartões de volume e isola os gráficos de contribuição dos agentes.
